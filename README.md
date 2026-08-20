@@ -1,56 +1,41 @@
-# Red de Actores — Córdoba Casting V0.3
+# Red de Actores — Córdoba Casting V0.5
 
-Primera versión conectable a Supabase. Mantiene el frontend V0.2 y agrega cuentas reales, perfiles autogestionados y moderación de administrador.
+Primera versión pensada para probar el circuito real de punta a punta con Supabase.
 
-## Qué hace esta versión
+## Antes de subirla
 
-- Cada actor crea su propia cuenta con email + contraseña.
-- El actor completa y envía su propio perfil: Córdoba Casting no tiene que darle el alta manualmente.
-- Foto principal obligatoria con una aclaración visible: alcanza con una foto clara donde se vea bien el rostro.
-- Hasta 2 fotos adicionales opcionales.
-- Las imágenes se redimensionan en el navegador a un máximo aproximado de 1200 px y se convierten a WEBP antes de subirlas.
-- Fecha de nacimiento privada; el directorio público recibe solamente la edad calculada.
-- Máximo 7 habilidades.
-- Video de presentación obligatorio mediante YouTube/Vimeo; reel y monólogo/escena opcionales.
-- Disponibilidad y aceptación de trabajos estudiantiles/no remunerados.
-- Alta nueva: draft/rejected → pending → approved/rejected.
-- Una vez aprobado, el actor puede modificar libremente sus datos sin volver a revisión.
-- Perfil rechazado: muestra claramente el motivo y al guardar vuelve automáticamente a `pending`.
-- Panel Administración real, accesible solo con `role = admin`.
-- Admin: revisar pendientes, aprobar, rechazar con motivo, ocultar/mostrar y destacar perfiles.
-- Perfiles aprobados y visibles alimentan automáticamente el directorio público.
-- La fecha de nacimiento NO sale de las RPC públicas.
-- La disponibilidad pública vence automáticamente cuando pasan 12 meses sin confirmar actividad.
-- Notificaciones de aprobación/rechazo quedan creadas en base de datos (la campanita visual se conecta en una próxima tanda).
+Tu proyecto ya tiene el SQL inicial de V0.3 ejecutado. Por eso, en Supabase > SQL Editor ejecutá **una sola vez** el archivo `supabase-v0.5-migration.sql`. Después podés subir esta carpeta a GitHub Pages.
 
-## Activación de Supabase
+## Circuito que ya se puede probar
 
-1. Crear un proyecto NUEVO de Supabase exclusivo para Red de Actores.
-2. Abrir `supabase-setup.sql`, copiar todo y ejecutarlo en Supabase > SQL Editor.
-3. En Supabase > Authentication > Providers > Email, desactivar la confirmación obligatoria de email para mantener el flujo acordado.
-4. Ir a Project Settings > API y copiar:
-   - Project URL
-   - anon/public key
-5. Abrir `js/config.js` y reemplazar:
-   - `PEGAR_SUPABASE_URL`
-   - `PEGAR_SUPABASE_ANON_KEY`
-6. Crear tu propia cuenta desde `registro.html`.
-7. Ejecutar una sola vez en SQL Editor, reemplazando el email:
+1. Un actor crea su propia cuenta.
+2. Completa nombre, fecha de nacimiento privada, localidad, bio, hasta 7 habilidades, disponibilidad y aceptación de trabajos estudiantiles/no remunerados.
+3. Sube foto principal obligatoria (solo se exige que el rostro se vea claramente) y hasta dos adicionales.
+4. Carga video de presentación obligatorio de YouTube/Vimeo; reel y monólogo/escena son opcionales.
+5. El perfil queda pendiente y no es público.
+6. El admin lo ve en Administración con fotos y videos embebidos, y puede aprobar o rechazar con motivo.
+7. Si se rechaza, el actor ve el motivo; al corregir y guardar vuelve a Pendientes.
+8. Si se aprueba, aparece en el directorio y en su perfil público.
+9. Una vez aprobado, el actor puede editar libremente sin nueva aprobación.
+10. El admin puede ocultar/mostrar, destacar/quitar destacado y eliminar definitivamente una cuenta de actor.
+11. La campanita muestra aprobación/rechazo y permite marcar notificaciones como leídas.
+12. El perfil muestra vigencia anual. Si vence, deja de figurar como disponible hasta que el actor confirme que sigue activo.
+13. Los perfiles públicos tienen un enlace discreto `Reportar perfil`; los reportes aparecen en Administración.
 
-```sql
-update public.profiles
-set role='admin'
-where id=(select id from auth.users where email='TU_EMAIL_ADMIN');
-```
+## Importante sobre renovación
 
-8. Cerrá sesión y volvé a entrar. En la navegación aparecerá `Administración` solamente para esa cuenta.
+La RPC pública ya considera automáticamente `No disponible` a un perfil cuya última confirmación tenga más de un año, aunque el booleano interno todavía esté en `true`. El botón `Confirmar que sigo activo` renueva otros 12 meses.
+
+## Lo que todavía NO está implementado
+
+- Contacto privado productora → actor.
+- Publicación y postulación a Castings.
+- Formación y Recursos administrables desde Supabase.
+- Emails externos; por ahora las notificaciones son internas.
 
 ## Seguridad
 
-El frontend no puede decidir quién es admin. Las políticas RLS y triggers de Supabase bloquean que un actor pueda aprobarse, hacerse admin, destacarse, verificarse u ocultarse a sí mismo.
-
-Los visitantes públicos no tienen `SELECT` directo sobre la tabla `profiles`. El directorio usa funciones RPC que devuelven solamente los campos públicos y calculan la edad sin revelar `birth_date`.
-
-## Demo sin Supabase
-
-Mientras `js/config.js` mantenga los placeholders, la home y perfiles públicos siguen usando los actores ficticios de `js/data.js`, por lo que el diseño puede seguir revisándose antes de conectar la base real.
+- La fecha de nacimiento no sale en las RPC públicas; solo se devuelve la edad calculada.
+- Un actor no puede hacerse admin, aprobarse, destacarse, verificarse u ocultarse mediante el frontend.
+- La pestaña Administración se agrega solo cuando el perfil autenticado tiene `role = admin`.
+- El borrado definitivo está encapsulado en una RPC que exige `is_admin()` y bloquea borrar administradores.

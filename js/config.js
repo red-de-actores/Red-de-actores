@@ -1,7 +1,8 @@
 // Red de Actores — configuración de Supabase
-// Pegá aquí los datos de Project Settings > API de TU proyecto de Red de Actores.
-// La anon key puede vivir en el frontend: la seguridad real la imponen las políticas RLS.
+// Proyecto independiente de Córdoba Casting / Red de Actores.
+// Esta clave publishable está pensada para uso en frontend.
+// La seguridad real la imponen las políticas RLS de Supabase.
 window.RDA_CONFIG = {
-  supabaseUrl: 'PEGAR_SUPABASE_URL',
-  supabaseAnonKey: 'PEGAR_SUPABASE_ANON_KEY'
+  supabaseUrl: 'https://dknmrbmloykjuuxgsvzw.supabase.co',
+  supabaseAnonKey: 'sb_publishable_TdRFm_kIygZaBStqGTO9hQ_XMYT1J33'
 };

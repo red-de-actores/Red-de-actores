@@ -120,6 +120,30 @@
       if(action==='unfeature') updates.is_featured=false;
       const {error}=await client.from('profiles').update(updates).eq('id',id); if(error) throw error;
     },
+    async notifications(){
+      if(!client) return [];
+      const {data,error}=await client.from('notifications').select('*').order('created_at',{ascending:false}).limit(30); if(error) throw error; return data||[];
+    },
+    async markNotificationsRead(){
+      if(!client) return;
+      const session=await this.session(); if(!session)return;
+      const {error}=await client.from('notifications').update({is_read:true}).eq('user_id',session.user.id).eq('is_read',false); if(error) throw error;
+    },
+    async reportProfile(actorRef,reason){
+      if(!client) throw new Error('Supabase todavía no está configurado.');
+      const {error}=await client.rpc('submit_profile_report',{actor_ref:String(actorRef),report_reason:reason}); if(error) throw error;
+    },
+    async reports(){
+      if(!client) return [];
+      const {data,error}=await client.from('profile_reports').select('id,actor_id,reason,created_at,resolved_at').is('resolved_at',null).order('created_at',{ascending:false}); if(error) throw error; return data||[];
+    },
+    async resolveReport(id){
+      const {error}=await client.from('profile_reports').update({resolved_at:new Date().toISOString()}).eq('id',id); if(error) throw error;
+    },
+    async deleteActor(id){
+      if(!client) throw new Error('Supabase todavía no está configurado.');
+      const {error}=await client.rpc('admin_delete_actor',{target_id:id}); if(error) throw error;
+    },
     async isAdmin(){ try{return (await this.currentProfile())?.role==='admin'}catch{return false} }
   };
 })();
