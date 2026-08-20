@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 160" role="img" aria-labelledby="title desc">
+  <title id="title">Red de Actores</title><desc id="desc">Logo de Red de Actores con claqueta integrada</desc>
+  <rect width="560" height="160" fill="none"/>
+  <g transform="translate(8,20)">
+    <g transform="translate(0,0)">
+      <rect x="0" y="22" width="80" height="70" rx="5" fill="#f5f2ec"/>
+      <rect x="0" y="4" width="82" height="18" rx="2" fill="#f5f2ec" transform="rotate(-8 0 4)"/>
+      <path d="M8 8l12-2-7 16-12 2zm26-4 12-2-7 16-12 2zm26-4 12-2-7 16-12 2z" fill="#111"/>
+      <path d="M12 79 L28 40 L43 40 L59 79 L48 79 L44 68 L27 68 L23 79 Z M31 58 H40 L35.5 47 Z" fill="#b51f24"/>
+    </g>
+    <g transform="translate(98,1)" font-family="Arial, Helvetica, sans-serif">
+      <text x="0" y="34" font-size="28" font-weight="600" fill="#f5f2ec" letter-spacing="1">RED DE</text>
+      <text x="0" y="82" font-size="54" font-weight="800" fill="#f5f2ec" letter-spacing="0.4">ACTORES</text>
+      <line x1="0" y1="101" x2="420" y2="101" stroke="#b51f24" stroke-width="3"/>
+      <text x="0" y="124" font-size="13" fill="#d7d2ca" letter-spacing="3.3">UNA PLATAFORMA DE CÓRDOBA CASTING</text>
+    </g>
+  </g>
+</svg>
