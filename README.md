@@ -1,50 +1,56 @@
-# Red de Actores — Córdoba Casting · Frontend V0.1
+# Red de Actores — Córdoba Casting V0.3
 
-Primera maqueta funcional navegable. No usa Supabase todavía: los perfiles son datos ficticios y la administración usa localStorage para demostrar destacado/oculto.
+Primera versión conectable a Supabase. Mantiene el frontend V0.2 y agrega cuentas reales, perfiles autogestionados y moderación de administrador.
 
-## Abrir
+## Qué hace esta versión
 
-Podés abrir `index.html` directamente o servir la carpeta con un servidor estático. Está preparada para GitHub Pages.
+- Cada actor crea su propia cuenta con email + contraseña.
+- El actor completa y envía su propio perfil: Córdoba Casting no tiene que darle el alta manualmente.
+- Foto principal obligatoria con una aclaración visible: alcanza con una foto clara donde se vea bien el rostro.
+- Hasta 2 fotos adicionales opcionales.
+- Las imágenes se redimensionan en el navegador a un máximo aproximado de 1200 px y se convierten a WEBP antes de subirlas.
+- Fecha de nacimiento privada; el directorio público recibe solamente la edad calculada.
+- Máximo 7 habilidades.
+- Video de presentación obligatorio mediante YouTube/Vimeo; reel y monólogo/escena opcionales.
+- Disponibilidad y aceptación de trabajos estudiantiles/no remunerados.
+- Alta nueva: draft/rejected → pending → approved/rejected.
+- Una vez aprobado, el actor puede modificar libremente sus datos sin volver a revisión.
+- Perfil rechazado: muestra claramente el motivo y al guardar vuelve automáticamente a `pending`.
+- Panel Administración real, accesible solo con `role = admin`.
+- Admin: revisar pendientes, aprobar, rechazar con motivo, ocultar/mostrar y destacar perfiles.
+- Perfiles aprobados y visibles alimentan automáticamente el directorio público.
+- La fecha de nacimiento NO sale de las RPC públicas.
+- La disponibilidad pública vence automáticamente cuando pasan 12 meses sin confirmar actividad.
+- Notificaciones de aprobación/rechazo quedan creadas en base de datos (la campanita visual se conecta en una próxima tanda).
 
-## Qué funciona en esta V0.1
+## Activación de Supabase
 
-- Directorio oscuro y responsive.
-- Buscador por nombre, localidad y habilidades.
-- Filtros de edad, disponibilidad y aceptación de trabajos estudiantiles.
-- Talento destacado administrable en la demo.
-- Perfiles individuales con hasta tres fotos.
-- Video de presentación prioritario y reproducible en modal.
-- Reel y monólogo opcionales.
-- Botón de compartir perfil.
-- Navegación: Actores, Castings, Formación, Recursos y Quiero mi Reel.
-- Perfil privado conceptual con disponibilidad y renovación anual.
-- Administración conceptual para destacar/ocultar perfiles.
-- Logo real de Córdoba Casting integrado junto a Red de Actores.
+1. Crear un proyecto NUEVO de Supabase exclusivo para Red de Actores.
+2. Abrir `supabase-setup.sql`, copiar todo y ejecutarlo en Supabase > SQL Editor.
+3. En Supabase > Authentication > Providers > Email, desactivar la confirmación obligatoria de email para mantener el flujo acordado.
+4. Ir a Project Settings > API y copiar:
+   - Project URL
+   - anon/public key
+5. Abrir `js/config.js` y reemplazar:
+   - `PEGAR_SUPABASE_URL`
+   - `PEGAR_SUPABASE_ANON_KEY`
+6. Crear tu propia cuenta desde `registro.html`.
+7. Ejecutar una sola vez en SQL Editor, reemplazando el email:
 
-## Decisiones cerradas reflejadas
+```sql
+update public.profiles
+set role='admin'
+where id=(select id from auth.users where email='TU_EMAIL_ADMIN');
+```
 
-- Sin altura.
-- Fecha de nacimiento privada; edad calculada automáticamente.
-- Máximo conceptual de 7 habilidades.
-- Una foto principal obligatoria + hasta 2 adicionales.
-- Presentación obligatoria; reel/monólogo opcionales.
-- Disponibilidad manual.
-- Aceptación separada de trabajos estudiantiles/no remunerados.
-- Renovación anual: al vencer, el perfil pasa a no disponible, no se elimina.
-- Talento destacado elegido por admin.
-- CTA de Reel discreto, bordó y con imagen de fondo.
+8. Cerrá sesión y volvé a entrar. En la navegación aparecerá `Administración` solamente para esa cuenta.
 
-## Próxima etapa recomendada
+## Seguridad
 
-1. Crear proyecto Supabase independiente.
-2. Tablas `profiles`, `profile_photos`, `profile_skills`, `notifications`, `castings` y `applications`.
-3. Auth + RLS.
-4. Storage de hasta 3 fotos por perfil con compresión WEBP.
-5. Moderación `draft / pending / approved / rejected`.
-6. Función/trigger de renovación anual.
-7. Contacto privado.
-8. Reemplazar los datos ficticios de `js/data.js` por consultas reales.
+El frontend no puede decidir quién es admin. Las políticas RLS y triggers de Supabase bloquean que un actor pueda aprobarse, hacerse admin, destacarse, verificarse u ocultarse a sí mismo.
 
-## Nota
+Los visitantes públicos no tienen `SELECT` directo sobre la tabla `profiles`. El directorio usa funciones RPC que devuelven solamente los campos públicos y calculan la edad sin revelar `birth_date`.
 
-Las fotos de actores de la demo se cargan desde RandomUser y el video usa un Vimeo de ejemplo. Son placeholders y deben reemplazarse antes de publicar una versión real.
+## Demo sin Supabase
+
+Mientras `js/config.js` mantenga los placeholders, la home y perfiles públicos siguen usando los actores ficticios de `js/data.js`, por lo que el diseño puede seguir revisándose antes de conectar la base real.
