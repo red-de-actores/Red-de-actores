@@ -76,9 +76,9 @@ async function initPrivateProfile(){
   if(!RDA.configured){root.innerHTML='<div class="notice">Supabase todavía no está configurado.</div>';return}
   const session=await RDA.session();if(!session){location.href='login.html';return}
   const p=await RDA.currentProfile();
-  const statusLabels={draft:'Borrador',pending:'Pendiente de aprobación',approved:'Perfil publicado',rejected:'Perfil rechazado'};
+  const statusLabels={draft:'Borrador',pending:'Pendiente de aprobación',approved:'Perfil publicado',rejected:'Perfil rechazado',changes_requested:'Cambios solicitados'};
   root.innerHTML=`
-    ${p.status==='rejected'?`<div class="rejected-panel"><strong>TU PERFIL NECESITA CORRECCIONES</strong><p>${p.rejection_reason||'Revisá la información indicada por Córdoba Casting.'}</p><span>Corregí lo necesario y guardá. Se enviará automáticamente a una nueva revisión.</span></div>`:''}
+    ${['rejected','changes_requested'].includes(p.status)?`<div class="rejected-panel"><strong>${p.status==='changes_requested'?'CÓRDOBA CASTING SOLICITÓ CAMBIOS':'TU PERFIL NECESITA CORRECCIONES'}</strong><p>${p.rejection_reason||'Revisá la información indicada por Córdoba Casting.'}</p><span>Corregí lo necesario y guardá. Se enviará automáticamente a una nueva revisión.</span></div>`:''}
     ${new URLSearchParams(location.search).get('welcome')?'<div class="success-panel">Perfil enviado. Córdoba Casting lo revisará antes de publicarlo.</div>':''}
     <div class="private-heading"><div><div class="eyebrow">Área privada</div><h1>${p.display_name||'Mi perfil'}</h1><span class="profile-state state-${p.status}">${statusLabels[p.status]||p.status}</span></div><button class="btn btn-secondary" id="logoutBtn">Cerrar sesión</button></div>
     <form id="profileEditForm" class="profile-edit-form">
@@ -108,8 +108,8 @@ async function initPrivateProfile(){
       const values={display_name:el('editName').value.trim(),birth_date:el('editBirth').value,city:el('editCity').value.trim(),bio:el('editBio').value.trim(),skills,is_available:el('editAvailable').checked,accepts_student_work:el('editStudent').checked,presentation_url:el('editPresentation').value.trim(),reel_url:el('editReel').value.trim()||null,monologue_url:el('editMonologue').value.trim()||null};
       const f1=el('editPhoto').files[0],f2=el('editPhoto2').files[0],f3=el('editPhoto3').files[0];
       if(f1)values.photo_url=await RDA.uploadPhoto(f1,'main'); if(f2)values.photo_url_2=await RDA.uploadPhoto(f2,'extra1'); if(f3)values.photo_url_3=await RDA.uploadPhoto(f3,'extra2');
-      if(p.status==='rejected')await RDA.submitProfile(values);else await RDA.saveProfile(values);
-      editMessage(p.status==='rejected'?'Cambios guardados. Tu perfil volvió a revisión.':'Cambios publicados correctamente.','success');
+      if(['rejected','changes_requested'].includes(p.status))await RDA.submitProfile(values);else await RDA.saveProfile(values);
+      editMessage(['rejected','changes_requested'].includes(p.status)?'Cambios guardados. Tu perfil volvió a revisión.':'Cambios publicados correctamente.','success');
     }catch(err){editMessage(err.message,'error')}
   }
 }

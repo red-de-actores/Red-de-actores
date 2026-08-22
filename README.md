@@ -1,4 +1,4 @@
-# Red de Actores — Córdoba Casting V0.5
+# Red de Actores — Córdoba Casting V0.6
 
 Primera versión pensada para probar el circuito real de punta a punta con Supabase.
 
@@ -39,3 +39,14 @@ La RPC pública ya considera automáticamente `No disponible` a un perfil cuya �
 - Un actor no puede hacerse admin, aprobarse, destacarse, verificarse u ocultarse mediante el frontend.
 - La pestaña Administración se agrega solo cuando el perfil autenticado tiene `role = admin`.
 - El borrado definitivo está encapsulado en una RPC que exige `is_admin()` y bloquea borrar administradores.
+
+## Cambios V0.6
+- Perfil público corregido para celular: foto contenida, layout en una columna, textos y botones sin overflow horizontal.
+- Administración: “Solicitar cambios” pasa a ser la acción habitual sobre perfiles publicados.
+- Eliminación definitiva sigue disponible, pero dentro de “Más acciones” y con doble confirmación.
+- Nuevo estado `changes_requested`; al corregir, el actor vuelve automáticamente a `pending`.
+- Contacto privado desde el perfil público, sin exponer email/teléfono del actor.
+- Castings V1: creación por admin, publicación, cierre/reapertura y postulación con perfil aprobado.
+
+### Antes de subir esta versión
+Ejecutar una sola vez `supabase-v0.6-migration.sql` en Supabase > SQL Editor.

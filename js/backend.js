@@ -114,6 +114,7 @@
       const updates={};
       if(action==='approve'){updates.status='approved';updates.rejection_reason=null;updates.approved_at=new Date().toISOString();}
       if(action==='reject'){updates.status='rejected';updates.rejection_reason=reason;}
+      if(action==='request_changes'){updates.status='changes_requested';updates.rejection_reason=reason;updates.is_hidden=false;}
       if(action==='hide') updates.is_hidden=true;
       if(action==='show') updates.is_hidden=false;
       if(action==='feature') updates.is_featured=true;
@@ -143,6 +144,36 @@
     async deleteActor(id){
       if(!client) throw new Error('Supabase todavía no está configurado.');
       const {error}=await client.rpc('admin_delete_actor',{target_id:id}); if(error) throw error;
+    },
+
+    async submitContact(actorRef,name,email,message){
+      if(!client) throw new Error('Supabase todavía no está configurado.');
+      const {error}=await client.rpc('submit_contact_request',{actor_ref:String(actorRef),sender_name:name,sender_email:email,contact_message:message}); if(error) throw error;
+    },
+    async contactRequests(){
+      if(!client) return [];
+      const {data,error}=await client.from('contact_requests').select('*').order('created_at',{ascending:false}); if(error) throw error; return data||[];
+    },
+    async publicCastings(){
+      if(!client) return [];
+      const {data,error}=await client.from('castings').select('*').order('created_at',{ascending:false}); if(error) throw error; return data||[];
+    },
+    async createCasting(values){
+      if(!client) throw new Error('Supabase todavía no está configurado.');
+      const session=await this.session(); if(!session) throw new Error('Tenés que iniciar sesión.');
+      const {data,error}=await client.from('castings').insert({...values,created_by:session.user.id}).select().single(); if(error) throw error; return data;
+    },
+    async updateCasting(id,values){
+      const {error}=await client.from('castings').update({...values,updated_at:new Date().toISOString()}).eq('id',id); if(error) throw error;
+    },
+    async applyToCasting(castingId,message=''){
+      const session=await this.session(); if(!session) throw new Error('Tenés que iniciar sesión para postularte.');
+      const p=await this.currentProfile(); if(p.status!=='approved') throw new Error('Tu perfil tiene que estar aprobado para postularte.');
+      const {error}=await client.from('casting_applications').insert({casting_id:castingId,actor_id:session.user.id,message:message||null}); if(error){ if(error.code==='23505') throw new Error('Ya te postulaste a este casting.'); throw error; }
+    },
+    async castingApplications(){
+      if(!client) return [];
+      const {data,error}=await client.from('casting_applications').select('*').order('created_at',{ascending:false}); if(error) throw error; return data||[];
     },
     async isAdmin(){ try{return (await this.currentProfile())?.role==='admin'}catch{return false} }
   };
