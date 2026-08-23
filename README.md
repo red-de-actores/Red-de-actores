@@ -1,3 +1,9 @@
+# Red de Actores V0.7.1
+
+Corrección de V0.7: crea/repara el bucket `casting-images`, asegura las columnas de Castings (incluida `submitted_at`), mejora la compatibilidad del listado y corrige el contraste de mensajes de error.
+
+**Si venías de V0.7 y viste “Bucket not found” o “column castings.submitted_at does not exist”, ejecutá solamente `supabase-v0.7.1-repair.sql`.**
+
 # Red de Actores — Córdoba Casting V0.7
 
 Versión funcional sobre Supabase con perfiles actorales, moderación, notificaciones y cartelera pública de castings.

@@ -161,11 +161,11 @@
     },
     async publicCastings(){
       if(!client) return [];
-      const {data,error}=await client.from('castings').select('*').order('submitted_at',{ascending:false}); if(error) throw error; return data||[];
+      const {data,error}=await client.from('castings').select('*').order('created_at',{ascending:false}); if(error) throw error; return data||[];
     },
     async allCastings(){
       if(!client) return [];
-      const {data,error}=await client.from('castings').select('*').order('submitted_at',{ascending:false}); if(error) throw error; return data||[];
+      const {data,error}=await client.from('castings').select('*').order('created_at',{ascending:false}); if(error) throw error; return data||[];
     },
     async uploadCastingImage(file){
       if(!client) throw new Error('Supabase todavía no está configurado.');
