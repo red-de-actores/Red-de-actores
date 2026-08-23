@@ -22,7 +22,7 @@ function openContactForm(actor){
     modal.addEventListener('click',e=>{if(e.target===modal||e.target.closest('[data-close-contact]'))modal.classList.remove('open')});
   }
   modal.querySelector('h2').textContent=`Contactar a ${actor.name}`;
-  const form=modal.querySelector('#contactForm'); form.reset();
+  const form=modal.querySelector('#contactForm'); if(!form) return; ['#contactName','#contactEmail','#contactMessage'].forEach(sel=>{const el=modal.querySelector(sel);if(el)el.value='';});
   form.onsubmit=async e=>{e.preventDefault();const btn=form.querySelector('[type=submit]');btn.disabled=true;try{await RDA.submitContact(actor.id,modal.querySelector('#contactName').value.trim(),modal.querySelector('#contactEmail').value.trim(),modal.querySelector('#contactMessage').value.trim());alert('Mensaje enviado. El actor recibirá una notificación dentro de la plataforma.');modal.classList.remove('open')}catch(err){alert(err.message||'No se pudo enviar el mensaje.')}finally{btn.disabled=false}};
   modal.classList.add('open');
 }
