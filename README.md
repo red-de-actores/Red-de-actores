@@ -1,4 +1,4 @@
-# Red de Actores — V0.9
+# Red de Actores — V0.9 Beta
 
 Versión de estabilización y pulido visual sobre la V0.7.4.
 
