@@ -161,7 +161,10 @@
     },
     async publicCastings(){
       if(!client) return [];
-      const {data,error}=await client.from('castings').select('*').order('created_at',{ascending:false}); if(error) throw error; return data||[];
+      const {data,error}=await client.from('castings').select('*').order('created_at',{ascending:false});
+      if(error) throw error;
+      const now=Date.now();
+      return (data||[]).filter(c=>c.status==='approved' && c.is_open!==false && (!c.expires_at || new Date(c.expires_at).getTime()>now));
     },
     async allCastings(){
       if(!client) return [];

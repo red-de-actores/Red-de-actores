@@ -156,8 +156,15 @@
     }
   }
 
+  async function showAdminNotice(){
+    const box=$('castingAdminNotice');
+    if(!box||!window.RDA?.configured) return;
+    try{ if(await RDA.isAdmin()) box.hidden=false; }catch(e){ console.warn('No se pudo determinar rol admin',e); }
+  }
+
   function init(){
     initNav();
+    showAdminNotice();
     const form=$('publicCastingForm');
     const panel=$('castingSubmitPanel');
     const show=$('showCastingForm');

@@ -9,8 +9,64 @@ function mailIcon(){return `<svg viewBox="0 0 24 24" aria-hidden="true"><path d=
 function shareIcon(){return `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.3"/><circle cx="6" cy="12" r="2.3"/><circle cx="18" cy="19" r="2.3"/><path d="m8 11 7.8-4.6M8 13l7.8 4.6"/></svg>`}
 function card(a,featured=false){const skills=a.skills.slice(0,3).map(s=>`<span class="tag">${s}</span>`).join('');return `<a class="actor-card${featured?' actor-card-featured':''}" href="actor.html?id=${a.id}">${featured?'<div class="featured-star">★</div>':''}<img class="actor-photo" src="${a.photo}" alt="${a.name}" loading="lazy"><div class="actor-body"><div class="actor-name">${a.name}</div><div class="actor-meta">${actorAge(a)} años · ${a.city}</div><div class="card-badges">${a.available?'<span class="status"><span class="dot"></span>Disponible ahora</span>':'<span class="availability-off">No disponible</span>'}${a.student?`<span class="student-badge" title="Acepta trabajos estudiantiles / no remunerados">${studentIcon()}<span>Estudiantiles</span></span>`:''}</div><div class="tags">${skills}</div></div></a>`}
 function initNav(){const btn=document.querySelector('.menu-toggle'),links=document.querySelector('.navlinks');if(btn&&links)btn.addEventListener('click',()=>links.classList.toggle('open'))}
-function renderHome(){const featured=document.querySelector('#featuredGrid'),top=document.querySelector('#actorGridTop'),all=document.querySelector('#actorGrid'),band=document.querySelector('#featuredBand');if(!featured||!top||!all)return;const actors=activeActors();top.innerHTML=actors.slice(0,6).map(a=>card(a,false)).join('');all.innerHTML=actors.slice(6).map(a=>card(a,false)).join('');featured.innerHTML=featuredActors().slice(0,4).map(a=>card(a,true)).join('');const form=document.querySelector('#filters');form?.addEventListener('input',applyFilters);form?.addEventListener('submit',e=>{e.preventDefault();applyFilters()});band?.classList.remove('hidden')}
-function applyFilters(){const q=(document.querySelector('#q')?.value||'').toLowerCase().trim();const av=document.querySelector('#available')?.value||'';const st=document.querySelector('#student')?.value||'';const age=document.querySelector('#age')?.value||'';let list=activeActors().filter(a=>{const A=actorAge(a);const text=[a.name,a.city,...a.skills].join(' ').toLowerCase();if(q&&!text.includes(q))return false;if(av==='yes'&&!a.available)return false;if(av==='no'&&a.available)return false;if(st==='yes'&&!a.student)return false;if(st==='no'&&a.student)return false;if(age){const [min,max]=age.split('-').map(Number);if(!(A>=min&&A<=max))return false}return true});const filtering=!!(q||av||st||age);const top=document.querySelector('#actorGridTop'),rest=document.querySelector('#actorGrid'),band=document.querySelector('#featuredBand');if(filtering){top.innerHTML=list.map(a=>card(a,false)).join('')||'<p class="muted no-results">No encontramos perfiles con esos filtros.</p>';rest.innerHTML='';band?.classList.add('hidden')}else{top.innerHTML=list.slice(0,6).map(a=>card(a,false)).join('');rest.innerHTML=list.slice(6).map(a=>card(a,false)).join('');band?.classList.remove('hidden')}}
+function sortActors(list,mode='default'){
+  const copy=[...list];
+  if(mode==='recent') copy.sort((a,b)=>new Date(b.updated||0)-new Date(a.updated||0));
+  if(mode==='name') copy.sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'es',{sensitivity:'base'}));
+  return copy;
+}
+function updateResultsCount(count,filtering=false){
+  const el=document.querySelector('#resultsCount');
+  if(!el)return;
+  el.textContent=`${count} ${count===1?'perfil':'perfiles'}${filtering?' encontrados':''}`;
+}
+function renderHome(){
+  const featured=document.querySelector('#featuredGrid'),top=document.querySelector('#actorGridTop'),all=document.querySelector('#actorGrid'),band=document.querySelector('#featuredBand');
+  if(!featured||!top||!all)return;
+  const actors=activeActors();
+  top.innerHTML=actors.slice(0,6).map(a=>card(a,false)).join('');
+  all.innerHTML=actors.slice(6).map(a=>card(a,false)).join('');
+  featured.innerHTML=featuredActors().slice(0,4).map(a=>card(a,true)).join('');
+  updateResultsCount(actors.length,false);
+  const form=document.querySelector('#filters');
+  form?.addEventListener('input',applyFilters);
+  form?.addEventListener('submit',e=>{e.preventDefault();applyFilters()});
+  document.querySelector('#clearFilters')?.addEventListener('click',()=>{
+    form?.querySelectorAll('input').forEach(el=>el.value='');
+    form?.querySelectorAll('select').forEach(el=>el.value=el.id==='sort'?'default':'');
+    applyFilters();
+  });
+  band?.classList.toggle('hidden',!featuredActors().length);
+}
+function applyFilters(){
+  const q=(document.querySelector('#q')?.value||'').toLowerCase().trim();
+  const av=document.querySelector('#available')?.value||'';
+  const st=document.querySelector('#student')?.value||'';
+  const age=document.querySelector('#age')?.value||'';
+  const sort=document.querySelector('#sort')?.value||'default';
+  let list=activeActors().filter(a=>{
+    const A=actorAge(a), text=[a.name,a.city,...(a.skills||[])].join(' ').toLowerCase();
+    if(q&&!text.includes(q))return false;
+    if(av==='yes'&&!a.available)return false;
+    if(av==='no'&&a.available)return false;
+    if(st==='yes'&&!a.student)return false;
+    if(st==='no'&&a.student)return false;
+    if(age){const [min,max]=age.split('-').map(Number);if(!(A>=min&&A<=max))return false}
+    return true;
+  });
+  list=sortActors(list,sort);
+  const filtering=!!(q||av||st||age||sort!=='default');
+  const top=document.querySelector('#actorGridTop'),rest=document.querySelector('#actorGrid'),band=document.querySelector('#featuredBand');
+  updateResultsCount(list.length,filtering);
+  if(filtering){
+    top.innerHTML=list.map(a=>card(a,false)).join('')||'<div class="no-results-card"><strong>No encontramos perfiles</strong><p>Probá quitando algún filtro o buscando otra habilidad.</p></div>';
+    rest.innerHTML=''; band?.classList.add('hidden');
+  }else{
+    top.innerHTML=list.slice(0,6).map(a=>card(a,false)).join('');
+    rest.innerHTML=list.slice(6).map(a=>card(a,false)).join('');
+    band?.classList.toggle('hidden',!featuredActors().length);
+  }
+}
 async function renderActor(){const root=document.querySelector('#actorRoot');if(!root)return;const id=new URLSearchParams(location.search).get('id')||'julieta-gomez';let a;if(window.RDA?.configured){a=await RDA.publicActor(id)}else{a=activeActors().find(x=>x.id===id)||(window.ACTORS||[])[0]}if(!a){root.innerHTML='<p>No encontramos este perfil.</p>';return;}document.title=`${a.name} — Red de Actores`;const thumbs=(a.photos||[a.photo]).slice(0,3).map((p,i)=>`<img src="${p}" alt="Foto ${i+1} de ${a.name}" data-photo="${p}">`).join('');root.innerHTML=`<a class="back" href="index.html">← Volver a resultados</a><div class="profile-hero"><div><img id="mainPhoto" class="profile-photo" src="${a.photo}" alt="${a.name}"><div class="thumbs">${thumbs}</div></div><div class="profile-info"><div class="profile-status-row">${a.available?`<span class="status-pill">${checkIcon()} Disponible ahora</span>`:'<span class="status-pill status-pill-off">No disponible actualmente</span>'}${a.student?`<span class="student-profile-badge">${studentIcon()} Acepta trabajos estudiantiles</span>`:''}</div><h1>${a.name}</h1><div class="profile-line">${actorAge(a)} años <span>•</span> ${a.city}</div><div class="profile-actions"><button class="btn btn-primary" data-contact>${mailIcon()} Contactar</button><button class="btn btn-secondary" data-share>${shareIcon()} Compartir perfil</button></div><div class="profile-divider"></div><div class="profile-highlights"><div class="profile-highlight"><span class="highlight-icon">${a.student?studentIcon():checkIcon()}</span><div><strong>Trabajos estudiantiles / no remunerados</strong><span>${a.student?'Sí, acepta este tipo de proyectos':'No acepta actualmente este tipo de proyectos'}</span></div></div><div class="profile-highlight"><span class="highlight-icon">${checkIcon()}</span><div><strong>Perfil actualizado</strong><span>Hace ${daysSince(a.updated)} días</span></div></div></div><div class="profile-divider"></div><div class="profile-section"><h3>Sobre mí</h3><p>${a.bio}</p></div><div class="profile-section"><h3>Habilidades <span class="muted">(máx. 7)</span></h3><div class="tags">${a.skills.map(s=>`<span class="tag profile-tag">${s}</span>`).join('')}</div></div></div></div><div class="profile-video-grid"><div><div class="video-label">VIDEO DE PRESENTACIÓN <small>Obligatorio</small></div>${videoBox(a.presentation,a.photo,'video-main')}</div><div class="video-side">${a.reel?`<div><div class="video-label">REEL <small>Opcional</small></div>${videoBox(a.reel,a.photo,'video-small')}</div>`:''}${a.monologue?`<div><div class="video-label">MONÓLOGO / ESCENA <small>Opcional</small></div>${videoBox(a.monologue,a.photo,'video-small')}</div>`:''}</div></div><div class="profile-bottom"><div class="profile-updated">${checkIcon()} Última actualización: hace ${daysSince(a.updated)} días</div><div class="profile-bottom-actions"><button class="report-link" data-report>Reportar perfil</button><button class="btn btn-primary" data-contact>${mailIcon()} CONTACTAR</button></div></div>`;document.querySelectorAll('[data-photo]').forEach(t=>t.addEventListener('click',()=>document.querySelector('#mainPhoto').src=t.dataset.photo));document.querySelectorAll('[data-video]').forEach(v=>v.addEventListener('click',()=>openVideo(v.dataset.video)));document.querySelectorAll('[data-share]').forEach(b=>b.addEventListener('click',shareProfile));document.querySelectorAll('[data-contact]').forEach(b=>b.addEventListener('click',()=>openContactForm(a)));document.querySelectorAll('[data-report]').forEach(b=>b.addEventListener('click',async()=>{const reason=prompt('¿Qué problema encontraste en este perfil?','');if(!reason?.trim())return;try{await RDA.reportProfile(a.id,reason.trim());alert('Gracias. Córdoba Casting recibió el reporte.')}catch(e){alert(e.message||'No se pudo enviar el reporte.')}}))}
 
 function openContactForm(actor){
