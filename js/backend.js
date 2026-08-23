@@ -125,6 +125,11 @@
       if(!client) return [];
       const {data,error}=await client.from('notifications').select('*').order('created_at',{ascending:false}).limit(30); if(error) throw error; return data||[];
     },
+    async markNotificationRead(id){
+      if(!client) return;
+      const session=await this.session(); if(!session)return;
+      const {error}=await client.from('notifications').update({is_read:true}).eq('id',id).eq('user_id',session.user.id); if(error) throw error;
+    },
     async markNotificationsRead(){
       if(!client) return;
       const session=await this.session(); if(!session)return;
@@ -156,24 +161,45 @@
     },
     async publicCastings(){
       if(!client) return [];
-      const {data,error}=await client.from('castings').select('*').order('created_at',{ascending:false}); if(error) throw error; return data||[];
+      const {data,error}=await client.from('castings').select('*').order('submitted_at',{ascending:false}); if(error) throw error; return data||[];
     },
-    async createCasting(values){
-      if(!client) throw new Error('Supabase todavía no está configurado.');
-      const session=await this.session(); if(!session) throw new Error('Tenés que iniciar sesión.');
-      const {data,error}=await client.from('castings').insert({...values,created_by:session.user.id}).select().single(); if(error) throw error; return data;
-    },
-    async updateCasting(id,values){
-      const {error}=await client.from('castings').update({...values,updated_at:new Date().toISOString()}).eq('id',id); if(error) throw error;
-    },
-    async applyToCasting(castingId,message=''){
-      const session=await this.session(); if(!session) throw new Error('Tenés que iniciar sesión para postularte.');
-      const p=await this.currentProfile(); if(p.status!=='approved') throw new Error('Tu perfil tiene que estar aprobado para postularte.');
-      const {error}=await client.from('casting_applications').insert({casting_id:castingId,actor_id:session.user.id,message:message||null}); if(error){ if(error.code==='23505') throw new Error('Ya te postulaste a este casting.'); throw error; }
-    },
-    async castingApplications(){
+    async allCastings(){
       if(!client) return [];
-      const {data,error}=await client.from('casting_applications').select('*').order('created_at',{ascending:false}); if(error) throw error; return data||[];
+      const {data,error}=await client.from('castings').select('*').order('submitted_at',{ascending:false}); if(error) throw error; return data||[];
+    },
+    async uploadCastingImage(file){
+      if(!client) throw new Error('Supabase todavía no está configurado.');
+      if(!file?.type?.startsWith('image/')) throw new Error('Elegí una imagen válida.');
+      if(file.size>5*1024*1024) throw new Error('La imagen supera el máximo de 5 MB.');
+      const blob=await compressImage(file,1800,.88);
+      const uuid=(crypto.randomUUID?crypto.randomUUID():`${Date.now()}-${Math.random().toString(16).slice(2)}`);
+      const path=`submissions/${uuid}.webp`;
+      const {error}=await client.storage.from('casting-images').upload(path,blob,{upsert:false,cacheControl:'3600',contentType:'image/webp'}); if(error) throw error;
+      const imageUrl=client.storage.from('casting-images').getPublicUrl(path).data.publicUrl;
+      return {path,imageUrl};
+    },
+    async submitPublicCasting(values,file){
+      const image=await this.uploadCastingImage(file);
+      const {data,error}=await client.rpc('submit_public_casting',{
+        p_project_name:values.project_name,p_roles:values.roles,p_requirements:values.requirements,
+        p_is_paid:values.is_paid,p_duration_days:values.duration_days,p_contact_type:values.contact_type,
+        p_contact_value:values.contact_value,p_image_path:image.path,p_image_url:image.imageUrl
+      });
+      if(error) throw error; return data;
+    },
+    async approveCasting(id){const {error}=await client.rpc('admin_approve_casting',{target_id:id});if(error)throw error;},
+    async rejectCasting(id,reason=''){const {error}=await client.rpc('admin_reject_casting',{target_id:id,reason});if(error)throw error;},
+    async closeCasting(id){const {error}=await client.from('castings').update({status:'closed',is_open:false,updated_at:new Date().toISOString()}).eq('id',id);if(error)throw error;},
+    async extendCasting(id,date){const expiry=new Date(`${date}T23:59:59`).toISOString();const {error}=await client.rpc('admin_extend_casting',{target_id:id,new_expiry:expiry});if(error)throw error;},
+    async deleteCasting(id){
+      const {data,error}=await client.from('castings').select('image_path').eq('id',id).single();if(error)throw error;
+      if(data?.image_path){const rem=await client.storage.from('casting-images').remove([data.image_path]);if(rem.error)throw rem.error;}
+      const del=await client.from('castings').delete().eq('id',id);if(del.error)throw del.error;
+    },
+    async downloadCastingImage(c){
+      if(!c?.image_path) throw new Error('Este casting no tiene imagen.');
+      const {data,error}=await client.storage.from('casting-images').download(c.image_path);if(error)throw error;
+      const url=URL.createObjectURL(data),a=document.createElement('a');a.href=url;a.download=`casting-${(c.project_name||c.title||'imagen').toLowerCase().replace(/[^a-z0-9]+/gi,'-')}.webp`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
     },
     async isAdmin(){ try{return (await this.currentProfile())?.role==='admin'}catch{return false} }
   };

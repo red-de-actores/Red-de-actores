@@ -3,16 +3,26 @@ function message(text,type='info'){const box=el('formMessage');if(!box)return;bo
 function skillsFrom(value){return value.split(',').map(x=>x.trim()).filter(Boolean).slice(0,7)}
 function videoOkay(url){if(!url)return false;try{const h=new URL(url).hostname;return h.includes('youtube.com')||h==='youtu.be'||h.includes('vimeo.com')}catch{return false}}
 
+function notificationHref(n){
+  if(['profile_approved','profile_rejected','changes_requested'].includes(n.type)) return 'perfil.html';
+  if(n.type==='contact_request') return 'perfil.html';
+  return '';
+}
 async function addNotificationBell(nav){
   try{
-    const items=await RDA.notifications();
-    const unread=items.filter(n=>!n.is_read).length;
+    let items=(await RDA.notifications()).filter(n=>!n.is_read);
     const wrap=document.createElement('div');wrap.className='notification-wrap';
-    wrap.innerHTML=`<button class="notification-bell" type="button" aria-label="Notificaciones">🔔${unread?`<span>${unread}</span>`:''}</button><div class="notification-menu" hidden>${items.length?items.map(n=>`<div class="notification-item ${n.is_read?'':'unread'}"><strong>${escapeHtml(n.title)}</strong><p>${escapeHtml(n.body||'')}</p><small>${new Date(n.created_at).toLocaleDateString('es-AR')}</small></div>`).join(''):'<div class="notification-empty">No tenés notificaciones.</div>'}</div>`;
     nav.appendChild(wrap);
-    const btn=wrap.querySelector('.notification-bell'), menu=wrap.querySelector('.notification-menu');
-    btn.onclick=async()=>{menu.hidden=!menu.hidden;if(!menu.hidden&&unread){await RDA.markNotificationsRead();btn.querySelector('span')?.remove();}};
-    document.addEventListener('click',e=>{if(!wrap.contains(e.target))menu.hidden=true});
+    const render=()=>{
+      const unread=items.length;
+      wrap.innerHTML=`<button class="notification-bell" type="button" aria-label="Notificaciones">🔔${unread?`<span>${unread}</span>`:''}</button><div class="notification-menu" hidden><div class="notification-menu-head"><strong>Notificaciones</strong>${unread?'<button type="button" data-read-all>Marcar todo como leído</button>':''}</div><div class="notification-list">${unread?items.map(n=>`<button type="button" class="notification-item unread" data-notification-id="${n.id}" data-href="${notificationHref(n)}"><strong>${escapeHtml(n.title)}</strong><p>${escapeHtml(n.body||'')}</p><small>${new Date(n.created_at).toLocaleDateString('es-AR')}</small></button>`).join(''):'<div class="notification-empty">No tenés notificaciones nuevas.</div>'}</div></div>`;
+      const btn=wrap.querySelector('.notification-bell'),menu=wrap.querySelector('.notification-menu');
+      btn.onclick=e=>{e.stopPropagation();menu.hidden=!menu.hidden};
+      wrap.querySelector('[data-read-all]')?.addEventListener('click',async e=>{e.stopPropagation();try{await RDA.markNotificationsRead();items=[];render();wrap.querySelector('.notification-menu').hidden=false}catch(err){console.warn(err)}});
+      wrap.querySelectorAll('[data-notification-id]').forEach(item=>item.addEventListener('click',async e=>{e.stopPropagation();const id=Number(item.dataset.notificationId),href=item.dataset.href;try{await RDA.markNotificationRead(id);items=items.filter(n=>Number(n.id)!==id);if(href){location.href=href;return}render();wrap.querySelector('.notification-menu').hidden=false}catch(err){console.warn(err)}}));
+    };
+    render();
+    document.addEventListener('click',e=>{const menu=wrap.querySelector('.notification-menu');if(menu&&!wrap.contains(e.target))menu.hidden=true});
   }catch(e){console.warn('No se pudieron cargar notificaciones',e)}
 }
 async function initGlobalAuth(){

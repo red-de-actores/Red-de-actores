@@ -1,52 +1,82 @@
-# Red de Actores — Córdoba Casting V0.6
+# Red de Actores — Córdoba Casting V0.7
 
-Primera versión pensada para probar el circuito real de punta a punta con Supabase.
+Versión funcional sobre Supabase con perfiles actorales, moderación, notificaciones y cartelera pública de castings.
 
-## Antes de subirla
+## Antes de subir esta versión
 
-Tu proyecto ya tiene el SQL inicial de V0.3 ejecutado. Por eso, en Supabase > SQL Editor ejecutá **una sola vez** el archivo `supabase-v0.5-migration.sql`. Después podés subir esta carpeta a GitHub Pages.
+Tu proyecto ya tiene ejecutadas las migraciones anteriores. Para V0.7 ejecutá **una sola vez**:
 
-## Circuito que ya se puede probar
+`supabase-v0.7-migration.sql`
 
-1. Un actor crea su propia cuenta.
-2. Completa nombre, fecha de nacimiento privada, localidad, bio, hasta 7 habilidades, disponibilidad y aceptación de trabajos estudiantiles/no remunerados.
-3. Sube foto principal obligatoria (solo se exige que el rostro se vea claramente) y hasta dos adicionales.
-4. Carga video de presentación obligatorio de YouTube/Vimeo; reel y monólogo/escena son opcionales.
-5. El perfil queda pendiente y no es público.
-6. El admin lo ve en Administración con fotos y videos embebidos, y puede aprobar o rechazar con motivo.
-7. Si se rechaza, el actor ve el motivo; al corregir y guardar vuelve a Pendientes.
-8. Si se aprueba, aparece en el directorio y en su perfil público.
-9. Una vez aprobado, el actor puede editar libremente sin nueva aprobación.
-10. El admin puede ocultar/mostrar, destacar/quitar destacado y eliminar definitivamente una cuenta de actor.
-11. La campanita muestra aprobación/rechazo y permite marcar notificaciones como leídas.
-12. El perfil muestra vigencia anual. Si vence, deja de figurar como disponible hasta que el actor confirme que sigue activo.
-13. Los perfiles públicos tienen un enlace discreto `Reportar perfil`; los reportes aparecen en Administración.
+Ruta: Supabase → SQL Editor → New query → pegar el archivo completo → Run.
 
-## Importante sobre renovación
+No vuelvas a ejecutar `supabase-setup.sql`, `supabase-v0.5-migration.sql` ni `supabase-v0.6-migration.sql` si ya fueron ejecutados.
 
-La RPC pública ya considera automáticamente `No disponible` a un perfil cuya última confirmación tenga más de un año, aunque el booleano interno todavía esté en `true`. El botón `Confirmar que sigo activo` renueva otros 12 meses.
+## Cambios principales de V0.7
 
-## Lo que todavía NO está implementado
+### Notificaciones
 
-- Contacto privado productora → actor.
-- Publicación y postulación a Castings.
-- Formación y Recursos administrables desde Supabase.
-- Emails externos; por ahora las notificaciones son internas.
+- La campanita ahora muestra solamente notificaciones no leídas.
+- Hacer clic en una notificación la marca como leída y deja de aparecer.
+- Las notificaciones de aprobación/rechazo/cambios llevan a `Mi perfil`.
+- Se agregó `Marcar todo como leído`, que vacía la bandeja de pendientes.
+- El contador se actualiza al leer notificaciones.
 
-## Seguridad
+### Castings: nuevo funcionamiento
 
-- La fecha de nacimiento no sale en las RPC públicas; solo se devuelve la edad calculada.
-- Un actor no puede hacerse admin, aprobarse, destacarse, verificarse u ocultarse mediante el frontend.
-- La pestaña Administración se agrega solo cuando el perfil autenticado tiene `role = admin`.
-- El borrado definitivo está encapsulado en una RPC que exige `is_admin()` y bloquea borrar administradores.
+Castings funciona como **cartelera pública**, sin conexión con los perfiles actorales.
 
-## Cambios V0.6
-- Perfil público corregido para celular: foto contenida, layout en una columna, textos y botones sin overflow horizontal.
-- Administración: “Solicitar cambios” pasa a ser la acción habitual sobre perfiles publicados.
-- Eliminación definitiva sigue disponible, pero dentro de “Más acciones” y con doble confirmación.
-- Nuevo estado `changes_requested`; al corregir, el actor vuelve automáticamente a `pending`.
-- Contacto privado desde el perfil público, sin exponer email/teléfono del actor.
-- Castings V1: creación por admin, publicación, cierre/reapertura y postulación con perfil aprobado.
+- Cualquier persona puede enviar un casting sin crear una cuenta.
+- El casting queda `Pendiente` y NO se publica hasta que un administrador lo aprueba.
+- El formulario solicita:
+  - nombre del proyecto;
+  - uno o varios roles;
+  - género masculino/femenino por rol;
+  - edad o rango de edad por rol;
+  - requisitos excluyentes opcionales;
+  - remunerado sí/no;
+  - duración inicial de 3, 5, 7 o 10 días;
+  - dato de contacto público: email, WhatsApp o teléfono;
+  - imagen obligatoria del anuncio.
+- No existe `Postularme con mi perfil` ni tabla de postulaciones.
+- Cada actor se comunica directamente con el contacto publicado y decide qué material enviar.
 
-### Antes de subir esta versión
-Ejecutar una sola vez `supabase-v0.6-migration.sql` en Supabase > SQL Editor.
+### Administración de castings
+
+En Administración → Castings aparecen:
+
+- Pendientes: descargar imagen, aprobar, rechazar o eliminar.
+- Publicados: descargar imagen, extender fecha, finalizar o eliminar.
+- Finalizados/rechazados: descargar, reabrir/extender o eliminar.
+- El admin puede extender la fecha más allá de los 10 días iniciales.
+
+### Imágenes de castings
+
+- Se creó el bucket `casting-images`.
+- Las imágenes se comprimen a WEBP antes de subir.
+- Tamaño máximo de archivo de origen: 5 MB.
+- El administrador puede descargar la imagen original procesada desde Administración para usarla en Instagram u otros canales.
+- Al eliminar definitivamente un casting desde Administración, la web elimina primero la imagen de Storage y después el registro del casting.
+
+## Seguridad / moderación
+
+- Un envío público no puede autoaprobarse.
+- El público solo puede leer castings aprobados, abiertos y todavía vigentes.
+- La aprobación, rechazo, extensión y eliminación siguen reservados al admin.
+- La carga pública de imágenes queda restringida al bucket `casting-images`, carpeta `submissions`, con tipos JPEG/PNG/WEBP y límite de 5 MB.
+
+## Flujo de prueba recomendado
+
+1. Ejecutar `supabase-v0.7-migration.sql` y confirmar `Success`.
+2. Subir V0.7 a GitHub Pages.
+3. Abrir Castings sin iniciar sesión y enviar un casting de prueba.
+4. Entrar como admin → Administración → Castings.
+5. Confirmar que el anuncio aparece en Pendientes y que la imagen se puede descargar.
+6. Aprobarlo.
+7. Abrir Castings en incógnito y comprobar que ahora aparece públicamente con contacto directo.
+8. Probar extender/finalizar/eliminar y confirmar que al eliminar también desaparece la imagen.
+9. Probar la campanita: hacer clic en una notificación y luego `Marcar todo como leído`.
+
+## Nota
+
+La V0.7 mantiene el resto del sistema de perfiles de V0.6: registro, aprobación inicial, edición libre posterior, solicitar cambios, destacados, ocultar/mostrar, renovación anual, fotos y videos.
